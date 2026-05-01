@@ -35,14 +35,14 @@ const Portfolio = mongoose.model('Portfolio', PortfolioSchema);
 // POST: Save Admin Data
 app.post('/api/portfolio/update', async (req, res) => {
     try {
-        await Portfolio.findOneAndUpdate({}, req.body, { upsert: true, new: true });
+        // Changed { new: true } to { returnDocument: 'after' } to fix the warning
+        await Portfolio.findOneAndUpdate({}, req.body, { upsert: true, returnDocument: 'after' });
         res.status(200).json({ message: 'Success' });
     } catch (error) {
         console.error('Save Error:', error);
         res.status(500).json({ message: 'Failed', error: error.message });
     }
 });
-
 // GET: Fetch Data for 3D Frontend
 app.get('/api/portfolio', async (req, res) => {
     try {
