@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     LayoutDashboard,
@@ -28,8 +28,9 @@ import {
     UploadCloud,
     Lock,
     ChevronRight,
-    Menu, // <-- Added Menu icon for mobile
-    X     // <-- Added X icon for closing sidebar
+    Menu,
+    X,
+    Download
 } from 'lucide-react';
 
 export default function AdminApp() {
@@ -38,8 +39,6 @@ export default function AdminApp() {
     const [loginError, setLoginError] = useState(false);
     const [activeTab, setActiveTab] = useState('profile');
     const [status, setStatus] = useState({ type: 'idle', message: '' });
-
-    // Mobile Sidebar State
     const [isSidebarMobileOpen, setIsSidebarMobileOpen] = useState(false);
 
     // Master State for the entire portfolio
@@ -49,7 +48,8 @@ export default function AdminApp() {
             role: 'Front-End Web Developer & Data Specialist',
             tagline: 'A passionate Computer Science professional with expertise in web development, data collection, analysis, and digital marketing.',
             about: 'As a professional in the field of computer science and technology, I bring a combination of technical skills and creative problem-solving to every project.',
-            imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop'
+            imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop',
+            cvUrl: '' // Added for CV Upload
         },
         socials: {
             email: 'reaj.hasan786@gmail.com',
@@ -68,6 +68,20 @@ export default function AdminApp() {
             { title: 'E-Commerce Platform', shortDesc: 'Complete online shopping solution.', tech: 'React, Node.js, MongoDB', overview: 'A comprehensive online shopping solution...', liveUrl: 'https://example.com', screenshots: [] }
         ]
     });
+
+    // 🔴 THE FIX: FETCH EXISTING DATA ON ADMIN LOAD SO IT DOESN'T RESET AFTER REFRESH
+    useEffect(() => {
+        fetch(`https://my3dportfolio-de1v.onrender.com/api/portfolio?t=${new Date().getTime()}`, { cache: 'no-store' })
+            .then(res => res.json())
+            .then(dbData => {
+                if (dbData && dbData.profile) {
+                    // Strip the MongoDB _id so it doesn't crash on save
+                    const { _id, __v, ...cleanData } = dbData;
+                    setPortfolioData(cleanData);
+                }
+            })
+            .catch(err => console.error("Admin could not load existing data.", err));
+    }, []);
 
     // --- AUTH HANDLERS ---
     const handleLogin = (e) => {
@@ -120,8 +134,19 @@ export default function AdminApp() {
         }
     };
 
+    const handleCvUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                handleNestedChange('profile', 'cvUrl', reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleProjectImagesUpload = (index, e) => {
-        const files = Array.from(e.target.files).filter(file => file.type === 'image/png').slice(0, 5);
+        const files = Array.from(e.target.files).filter(file => file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg').slice(0, 5);
         const promises = files.map(file => {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -151,7 +176,7 @@ export default function AdminApp() {
             }
         } catch (error) {
             console.error('Error saving:', error);
-            setStatus({ type: 'success', message: 'Portfolio updated successfully! (Mocked for preview)' });
+            setStatus({ type: 'error', message: 'Failed to update portfolio.' });
             setTimeout(() => setStatus({ type: 'idle', message: '' }), 3000);
         }
     };
@@ -174,7 +199,7 @@ export default function AdminApp() {
                                 <Lock className="w-8 h-8 text-blue-400" />
                             </div>
                         </div>
-                        <h1 className="text-4xl font-black text-white mb-3 tracking-tight">Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">Reajul</span></h1>
+                        <h1 className="text-4xl font-black text-white mb-3 tracking-tight">Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">Admin</span></h1>
                         <p className="text-slate-400">Please enter your credentials to access the CMS.</p>
                     </div>
 
@@ -206,10 +231,6 @@ export default function AdminApp() {
                             Enter Dashboard
                             <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         </button>
-
-                        <div className="mt-8 pt-8 border-t border-white/5 text-center">
-                            <p className="text-xs text-slate-500 font-medium uppercase tracking-widest">Secured Personal CMS v2.0</p>
-                        </div>
                     </form>
                 </div>
             </div>
@@ -220,7 +241,6 @@ export default function AdminApp() {
     return (
         <div className="min-h-screen bg-[#020617] text-slate-200 font-sans flex overflow-hidden">
 
-            {/* MOBILE OVERLAY BACKGROUND */}
             <AnimatePresence>
                 {isSidebarMobileOpen && (
                     <motion.div
@@ -231,7 +251,6 @@ export default function AdminApp() {
                 )}
             </AnimatePresence>
 
-            {/* SIDEBAR NAVIGATION (RESPONSIVE) */}
             <aside className={`
                 fixed inset-y-0 left-0 z-50 w-72 bg-[#0a0f1c]/95 border-r border-white/10 flex flex-col backdrop-blur-2xl shrink-0 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]
                 md:relative md:translate-x-0
@@ -242,7 +261,6 @@ export default function AdminApp() {
                         <LayoutDashboard className="w-6 h-6 text-blue-500" />
                         ADMIN CMS
                     </h1>
-                    {/* MOBILE CLOSE BUTTON */}
                     <button onClick={() => setIsSidebarMobileOpen(false)} className="p-2 text-slate-400 hover:text-white md:hidden bg-white/5 rounded-lg">
                         <X className="w-5 h-5" />
                     </button>
@@ -281,11 +299,9 @@ export default function AdminApp() {
                 </div>
             </aside>
 
-            {/* MAIN CONTENT AREA */}
             <main className="flex-1 flex flex-col relative h-screen max-w-full">
                 <header className="px-4 md:px-6 py-4 border-b border-white/10 bg-white/5 backdrop-blur-md flex justify-between items-center shrink-0 z-20 gap-4">
                     <div className="flex items-center gap-3">
-                        {/* MOBILE HAMBURGER BUTTON */}
                         <button onClick={() => setIsSidebarMobileOpen(true)} className="p-2.5 bg-white/5 border border-white/10 rounded-xl text-slate-300 hover:text-white md:hidden">
                             <Menu className="w-5 h-5" />
                         </button>
@@ -327,11 +343,11 @@ export default function AdminApp() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
                                             <label className={labelBaseClass}><Type className="w-4 h-4 text-blue-400" /> Full Name</label>
-                                            <input type="text" value={portfolioData.profile.name} onChange={(e) => handleNestedChange('profile', 'name', e.target.value)} className={inputBaseClass} />
+                                            <input type="text" value={portfolioData.profile.name || ''} onChange={(e) => handleNestedChange('profile', 'name', e.target.value)} className={inputBaseClass} />
                                         </div>
                                         <div>
                                             <label className={labelBaseClass}><Briefcase className="w-4 h-4 text-blue-400" /> Job Role</label>
-                                            <input type="text" value={portfolioData.profile.role} onChange={(e) => handleNestedChange('profile', 'role', e.target.value)} className={inputBaseClass} />
+                                            <input type="text" value={portfolioData.profile.role || ''} onChange={(e) => handleNestedChange('profile', 'role', e.target.value)} className={inputBaseClass} />
                                         </div>
                                     </div>
                                     <div>
@@ -345,12 +361,25 @@ export default function AdminApp() {
                                     </div>
                                     <div>
                                         <label className={labelBaseClass}><FileText className="w-4 h-4 text-blue-400" /> Hero Tagline</label>
-                                        <textarea rows="2" value={portfolioData.profile.tagline} onChange={(e) => handleNestedChange('profile', 'tagline', e.target.value)} className={inputBaseClass}></textarea>
+                                        <textarea rows="2" value={portfolioData.profile.tagline || ''} onChange={(e) => handleNestedChange('profile', 'tagline', e.target.value)} className={inputBaseClass}></textarea>
                                     </div>
+
                                     <h3 className="text-2xl font-bold text-white mb-6 border-b border-white/10 pb-4 pt-6">About Me Section</h3>
                                     <div>
                                         <label className={labelBaseClass}><AlignLeft className="w-4 h-4 text-blue-400" /> Detailed Description</label>
-                                        <textarea rows="5" value={portfolioData.profile.about} onChange={(e) => handleNestedChange('profile', 'about', e.target.value)} className={inputBaseClass}></textarea>
+                                        <textarea rows="5" value={portfolioData.profile.about || ''} onChange={(e) => handleNestedChange('profile', 'about', e.target.value)} className={inputBaseClass}></textarea>
+                                    </div>
+
+                                    {/* 🔴 CV UPLOAD SECTION ADDED HERE */}
+                                    <div>
+                                        <label className={labelBaseClass}><Download className="w-4 h-4 text-blue-400" /> Upload CV / Resume (PDF or Image)</label>
+                                        <div className="flex items-center gap-4 bg-slate-900/50 border border-white/10 rounded-xl px-5 py-4 overflow-hidden">
+                                            {portfolioData.profile.cvUrl && (
+                                                <CheckCircle2 className="w-8 h-8 text-emerald-400 shrink-0" />
+                                            )}
+                                            <input type="file" accept=".pdf,.doc,.docx,image/*" onChange={handleCvUpload} className="w-full text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-600/20 file:text-emerald-400 hover:file:bg-emerald-600/30 transition-all cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap" />
+                                        </div>
+                                        {portfolioData.profile.cvUrl && <p className="text-xs text-emerald-400 mt-2 ml-1">CV is successfully attached and ready for download.</p>}
                                     </div>
                                 </div>
                             )}
@@ -375,11 +404,11 @@ export default function AdminApp() {
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 pr-12 md:pr-0 mt-8 md:mt-0">
                                                 <div>
                                                     <label className="text-xs font-semibold text-slate-400 uppercase">Year / Duration</label>
-                                                    <input type="text" value={item.year} onChange={(e) => handleArrayChange('timeline', index, 'year', e.target.value)} className={`${inputBaseClass} py-2 mt-1`} placeholder="e.g. 2024 - Present" />
+                                                    <input type="text" value={item.year || ''} onChange={(e) => handleArrayChange('timeline', index, 'year', e.target.value)} className={`${inputBaseClass} py-2 mt-1`} placeholder="e.g. 2024 - Present" />
                                                 </div>
                                                 <div>
                                                     <label className="text-xs font-semibold text-slate-400 uppercase">Category</label>
-                                                    <select value={item.category} onChange={(e) => handleArrayChange('timeline', index, 'category', e.target.value)} className={`${inputBaseClass} py-2 mt-1 appearance-none`}>
+                                                    <select value={item.category || ''} onChange={(e) => handleArrayChange('timeline', index, 'category', e.target.value)} className={`${inputBaseClass} py-2 mt-1 appearance-none`}>
                                                         <option value="Experience">Experience</option>
                                                         <option value="Education">Education</option>
                                                         <option value="Skills Growth">Skills Growth</option>
@@ -387,16 +416,16 @@ export default function AdminApp() {
                                                 </div>
                                                 <div>
                                                     <label className="text-xs font-semibold text-slate-400 uppercase">Organization</label>
-                                                    <input type="text" value={item.organization} onChange={(e) => handleArrayChange('timeline', index, 'organization', e.target.value)} className={`${inputBaseClass} py-2 mt-1`} />
+                                                    <input type="text" value={item.organization || ''} onChange={(e) => handleArrayChange('timeline', index, 'organization', e.target.value)} className={`${inputBaseClass} py-2 mt-1`} />
                                                 </div>
                                             </div>
                                             <div className="mb-4">
                                                 <label className="text-xs font-semibold text-slate-400 uppercase">Title / Role</label>
-                                                <input type="text" value={item.title} onChange={(e) => handleArrayChange('timeline', index, 'title', e.target.value)} className={`${inputBaseClass} py-2 mt-1`} />
+                                                <input type="text" value={item.title || ''} onChange={(e) => handleArrayChange('timeline', index, 'title', e.target.value)} className={`${inputBaseClass} py-2 mt-1`} />
                                             </div>
                                             <div>
                                                 <label className="text-xs font-semibold text-slate-400 uppercase">Description</label>
-                                                <textarea rows="2" value={item.desc} onChange={(e) => handleArrayChange('timeline', index, 'desc', e.target.value)} className={`${inputBaseClass} py-2 mt-1 resize-none`}></textarea>
+                                                <textarea rows="2" value={item.desc || ''} onChange={(e) => handleArrayChange('timeline', index, 'desc', e.target.value)} className={`${inputBaseClass} py-2 mt-1 resize-none`}></textarea>
                                             </div>
                                         </div>
                                     ))}
@@ -424,11 +453,11 @@ export default function AdminApp() {
                                                 <div className="space-y-4 pr-10 md:pr-0">
                                                     <div>
                                                         <label className="text-xs font-semibold text-slate-400 uppercase">Skill Name</label>
-                                                        <input type="text" value={skill.name} onChange={(e) => handleArrayChange('skills', index, 'name', e.target.value)} className={`${inputBaseClass} py-2 mt-1`} />
+                                                        <input type="text" value={skill.name || ''} onChange={(e) => handleArrayChange('skills', index, 'name', e.target.value)} className={`${inputBaseClass} py-2 mt-1`} />
                                                     </div>
                                                     <div>
                                                         <label className="text-xs font-semibold text-slate-400 uppercase">Short Description</label>
-                                                        <textarea rows="2" value={skill.description} onChange={(e) => handleArrayChange('skills', index, 'description', e.target.value)} className={`${inputBaseClass} py-2 mt-1 resize-none`}></textarea>
+                                                        <textarea rows="2" value={skill.description || ''} onChange={(e) => handleArrayChange('skills', index, 'description', e.target.value)} className={`${inputBaseClass} py-2 mt-1 resize-none`}></textarea>
                                                     </div>
                                                 </div>
                                             </div>
@@ -461,31 +490,31 @@ export default function AdminApp() {
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                     <div>
                                                         <label className={labelBaseClass}>Project Title</label>
-                                                        <input type="text" value={project.title} onChange={(e) => handleArrayChange('projects', index, 'title', e.target.value)} className={inputBaseClass} />
+                                                        <input type="text" value={project.title || ''} onChange={(e) => handleArrayChange('projects', index, 'title', e.target.value)} className={inputBaseClass} />
                                                     </div>
                                                     <div>
                                                         <label className={labelBaseClass}>Live URL</label>
-                                                        <input type="url" value={project.liveUrl} onChange={(e) => handleArrayChange('projects', index, 'liveUrl', e.target.value)} className={inputBaseClass} />
+                                                        <input type="url" value={project.liveUrl || ''} onChange={(e) => handleArrayChange('projects', index, 'liveUrl', e.target.value)} className={inputBaseClass} />
                                                     </div>
                                                 </div>
                                                 <div>
                                                     <label className={labelBaseClass}>Short Description (Card Subtitle)</label>
-                                                    <input type="text" value={project.shortDesc} onChange={(e) => handleArrayChange('projects', index, 'shortDesc', e.target.value)} className={inputBaseClass} />
+                                                    <input type="text" value={project.shortDesc || ''} onChange={(e) => handleArrayChange('projects', index, 'shortDesc', e.target.value)} className={inputBaseClass} />
                                                 </div>
                                                 <div>
                                                     <label className={labelBaseClass}>Technologies (Comma separated)</label>
-                                                    <input type="text" value={project.tech} onChange={(e) => handleArrayChange('projects', index, 'tech', e.target.value)} className={inputBaseClass} />
+                                                    <input type="text" value={project.tech || ''} onChange={(e) => handleArrayChange('projects', index, 'tech', e.target.value)} className={inputBaseClass} />
                                                 </div>
                                                 <div>
                                                     <label className={labelBaseClass}>Detailed Overview (Case Study)</label>
-                                                    <textarea rows="4" value={project.overview} onChange={(e) => handleArrayChange('projects', index, 'overview', e.target.value)} className={`${inputBaseClass} resize-none`}></textarea>
+                                                    <textarea rows="4" value={project.overview || ''} onChange={(e) => handleArrayChange('projects', index, 'overview', e.target.value)} className={`${inputBaseClass} resize-none`}></textarea>
                                                 </div>
                                                 <div>
-                                                    <label className={labelBaseClass}><ImageIcon className="w-4 h-4 text-blue-400" /> Project Screenshots (Upload up to 5 PNGs)</label>
+                                                    <label className={labelBaseClass}><ImageIcon className="w-4 h-4 text-blue-400" /> Project Screenshots (Upload up to 5 Images)</label>
                                                     <div className="bg-slate-900/50 border border-white/10 rounded-xl px-5 py-4">
                                                         <input
                                                             type="file"
-                                                            accept="image/png"
+                                                            accept="image/*"
                                                             multiple
                                                             onChange={(e) => handleProjectImagesUpload(index, e)}
                                                             className="w-full text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600/20 file:text-blue-400 hover:file:bg-blue-600/30 transition-all cursor-pointer mb-4 overflow-hidden text-ellipsis whitespace-nowrap"
@@ -514,23 +543,23 @@ export default function AdminApp() {
                                     <div className="grid grid-cols-1 gap-6">
                                         <div>
                                             <label className={labelBaseClass}><Mail className="w-4 h-4 text-blue-400" /> Email Address</label>
-                                            <input type="email" value={portfolioData.socials.email} onChange={(e) => handleNestedChange('socials', 'email', e.target.value)} className={inputBaseClass} />
+                                            <input type="email" value={portfolioData.socials?.email || ''} onChange={(e) => handleNestedChange('socials', 'email', e.target.value)} className={inputBaseClass} />
                                         </div>
                                         <div>
                                             <label className={labelBaseClass}><Smartphone className="w-4 h-4 text-blue-400" /> WhatsApp Link</label>
-                                            <input type="url" value={portfolioData.socials.whatsapp} onChange={(e) => handleNestedChange('socials', 'whatsapp', e.target.value)} className={inputBaseClass} />
+                                            <input type="url" value={portfolioData.socials?.whatsapp || ''} onChange={(e) => handleNestedChange('socials', 'whatsapp', e.target.value)} className={inputBaseClass} />
                                         </div>
                                         <div>
                                             <label className={labelBaseClass}><LinkIcon className="w-4 h-4 text-blue-400" /> Fiverr Profile URL</label>
-                                            <input type="url" value={portfolioData.socials.fiverr} onChange={(e) => handleNestedChange('socials', 'fiverr', e.target.value)} className={inputBaseClass} />
+                                            <input type="url" value={portfolioData.socials?.fiverr || ''} onChange={(e) => handleNestedChange('socials', 'fiverr', e.target.value)} className={inputBaseClass} />
                                         </div>
                                         <div>
                                             <label className={labelBaseClass}><User className="w-4 h-4 text-blue-400" /> LinkedIn URL</label>
-                                            <input type="url" value={portfolioData.socials.linkedin} onChange={(e) => handleNestedChange('socials', 'linkedin', e.target.value)} className={inputBaseClass} />
+                                            <input type="url" value={portfolioData.socials?.linkedin || ''} onChange={(e) => handleNestedChange('socials', 'linkedin', e.target.value)} className={inputBaseClass} />
                                         </div>
                                         <div>
                                             <label className={labelBaseClass}><ThumbsUp className="w-4 h-4 text-blue-400" /> Facebook URL</label>
-                                            <input type="url" value={portfolioData.socials.facebook} onChange={(e) => handleNestedChange('socials', 'facebook', e.target.value)} className={inputBaseClass} />
+                                            <input type="url" value={portfolioData.socials?.facebook || ''} onChange={(e) => handleNestedChange('socials', 'facebook', e.target.value)} className={inputBaseClass} />
                                         </div>
                                     </div>
                                 </div>
