@@ -162,7 +162,7 @@ export default function AdminApp() {
     const handleSubmit = async () => {
         setStatus({ type: 'loading', message: '' });
         try {
-            const response = await fetch('http://localhost:5001/api/portfolio/update', {
+            const response = await fetch('https://my3dportfolio-de1v.onrender.com/api/portfolio/update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(portfolioData),
