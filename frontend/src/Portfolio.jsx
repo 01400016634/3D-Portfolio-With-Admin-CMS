@@ -490,10 +490,18 @@ const HomeView = ({ data, setView }) => {
                             <img src={data.profile.imageUrl} alt="Reajul Hasan Profile" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                         </div>
                     </motion.div>
+                    {/* FIX 2: Brighter Badge */}
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="inline-block mb-6 px-5 py-2 rounded-full border border-blue-500/50 bg-blue-500/20 text-blue-300 text-xs font-bold tracking-widest uppercase shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                        Available for new opportunities
+                    </motion.div>
 
                     <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white mb-6 tracking-tighter drop-shadow-2xl leading-[1.1] w-full break-words">
                         Hi, I'm <br className="sm:hidden" /><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">{data.profile.name}</span>
                     </h1>
+                    {/* FIX 1: Professional Role Added Here */}
+                    <h2 className="text-sm md:text-lg font-black text-cyan-400 tracking-[0.3em] uppercase mb-6 drop-shadow-md">
+                        {data.profile.role}
+                    </h2>
 
                     <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-slate-300 mb-10 md:mb-12 max-w-3xl mx-auto font-light leading-relaxed md:leading-normal">
                         {data.profile.tagline}
